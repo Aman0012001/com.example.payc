@@ -1,0 +1,48 @@
+﻿
+> Configure project :app
+.\gradlew : e: file:///C:/Users/amanj/OneDrive/Desktop/pay
+c/app/build.gradle.kts:17:35: Unresolved reference: util
+At line:1 char:48
++ ... AVA_HOME="C:\Program Files\Java\jdk-17"; .\gradlew 
+clean 2>&1 | Out-F ...
++                                              
+~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: file:///C 
+   :/U...reference: util:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: file:///C:/Users/amanj/OneDrive/Desktop/payc/app/build.
+gradle.kts:19:38: Unresolved reference: io
+w: file:///C:/Users/amanj/OneDrive/Desktop/payc/app/build.gradle.kts:38:59: No cast needed
+w: file:///C:/Users/amanj/OneDrive/Desktop/payc/app/build.gradle.kts:39:65: No cast needed
+w: file:///C:/Users/amanj/OneDrive/Desktop/payc/app/build.gradle.kts:41:69: No cast needed
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file 'C:\Users\amanj\OneDrive\Desktop\payc\app\build
+.gradle.kts' line: 17
+
+* What went wrong:
+Script compilation errors:
+
+  Line 17:     val keystoreProperties = 
+java.util.Properties()
+                                             ^ Unresolved 
+reference: util
+
+  Line 19:         keystoreProperties.load(java.io.FileInp
+utStream(keystorePropertiesFile))
+                                                ^ 
+Unresolved reference: io
+
+2 errors
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log 
+output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
