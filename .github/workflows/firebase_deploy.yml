@@ -20,6 +20,21 @@ jobs:
           distribution: "temurin"
           cache: gradle
 
+      - name: Validate required secrets
+        run: |
+          missing=0
+          for s in FIREBASE_APP_ID FIREBASE_SERVICE_ACCOUNT_JSON GOOGLE_SERVICES_JSON_BASE64 KEYSTORE_FILE_BASE64 KEYSTORE_PASSWORD KEY_PASSWORD KEY_ALIAS; do
+            v=$(printenv $s)
+            if [ -z "$v" ]; then
+              echo "Missing secret: $s"
+              missing=1
+            fi
+          done
+          if [ $missing -eq 1 ]; then
+            echo "One or more required secrets are missing"
+            exit 1
+          fi
+
       # 1. Decode the Keystore File
       - name: Decode Keystore
         env:
