@@ -44,9 +44,14 @@ jobs:
           google_services_present=true
           [ -z "$GOOGLE_SERVICES_JSON_BASE64" ] && google_services_present=false
 
+          fallback_ready=true
+          [ ! -f "app/google-services.json" ] && fallback_ready=false
+          [ ! -f "payc-release-key.jks" ] && fallback_ready=false
+
           echo "debug_ready=$debug_ready" >> "$GITHUB_OUTPUT"
           echo "release_ready=$release_ready" >> "$GITHUB_OUTPUT"
           echo "google_services_present=$google_services_present" >> "$GITHUB_OUTPUT"
+          echo "fallback_ready=$fallback_ready" >> "$GITHUB_OUTPUT"
 
       # 1. Decode the Keystore File
       - name: Decode Keystore
@@ -64,6 +69,14 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> keystore.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
+
+      - name: Create keystore.properties (fallback)
+        if: ${{ steps.secrets.outputs.release_ready != 'true' && steps.secrets.outputs.fallback_ready == 'true' }}
+        run: |
+          echo "storeFile=../payc-release-key.jks" > keystore.properties
+          echo "keyAlias=payc" >> keystore.properties
+          echo "storePassword=payc2025" >> keystore.properties
+          echo "keyPassword=payc2025" >> keystore.properties
 
       # 3. Decode google-services.json (if not committed)
       - name: Create google-services.json
@@ -87,9 +100,19 @@ jobs:
           groups: testers
           file: app/build/outputs/apk/release/app-release.apk
 
+      - name: Upload to Firebase App Distribution (fallback)
+        if: ${{ steps.secrets.outputs.release_ready != 'true' && steps.secrets.outputs.fallback_ready == 'true' }}
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: 1:611955759822:android:1059bf9af9468b725bce9f
+          serviceCredentialsFile: app/google-services.json
+          groups: testers
+          file: app/build/outputs/apk/release/app-release.apk
+
       - name: Job summary
         run: |
           echo "### Firebase Deploy CI Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "- Debug deploy ready: ${{ steps.secrets.outputs.debug_ready }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Release deploy ready: ${{ steps.secrets.outputs.release_ready }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Google services provided: ${{ steps.secrets.outputs.google_services_present }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Fallback ready: ${{ steps.secrets.outputs.fallback_ready }}" >> "$GITHUB_STEP_SUMMARY"

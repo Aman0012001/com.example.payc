@@ -44,12 +44,18 @@ jobs:
                   google_services_present=true
                   [ -z "$GOOGLE_SERVICES_JSON_BASE64" ] && google_services_present=false
 
+                  fallback_ready=true
+                  [ ! -f "app/google-services.json" ] && fallback_ready=false
+                  [ ! -f "payc-release-key.jks" ] && fallback_ready=false
+
                   echo "debug_ready=$debug_ready" >> "$GITHUB_OUTPUT"
                   echo "release_ready=$release_ready" >> "$GITHUB_OUTPUT"
                   echo "google_services_present=$google_services_present" >> "$GITHUB_OUTPUT"
+                  echo "fallback_ready=$fallback_ready" >> "$GITHUB_OUTPUT"
                   echo "Debug deploy ready: $debug_ready"
                   echo "Release deploy ready: $release_ready"
                   echo "Google services provided: $google_services_present"
+                  echo "Fallback ready (files in repo): $fallback_ready"
 
             # 1. Decode the Keystore File (Required for Release Build)
             - name: Decode Keystore
@@ -72,6 +78,14 @@ jobs:
                   echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
                   echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> keystore.properties
                   echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
+
+            - name: Create keystore.properties (fallback)
+              if: ${{ steps.secrets.outputs.release_ready != 'true' && steps.secrets.outputs.fallback_ready == 'true' }}
+              run: |
+                  echo "storeFile=../payc-release-key.jks" > keystore.properties
+                  echo "keyAlias=payc" >> keystore.properties
+                  echo "storePassword=payc2025" >> keystore.properties
+                  echo "keyPassword=payc2025" >> keystore.properties
 
             # 3. Decode google-services.json
             - name: Create google-services.json
@@ -103,6 +117,16 @@ jobs:
                   file: app/build/outputs/apk/debug/app-debug.apk
                   releaseNotes: "Debug Build - Commit: ${{ github.sha }}"
 
+            - name: Upload Debug APK (fallback)
+              if: ${{ steps.secrets.outputs.debug_ready != 'true' && steps.secrets.outputs.fallback_ready == 'true' }}
+              uses: wzieba/Firebase-Distribution-Github-Action@v1
+              with:
+                  appId: 1:611955759822:android:1059bf9af9468b725bce9f
+                  serviceCredentialsFile: app/google-services.json
+                  groups: testers
+                  file: app/build/outputs/apk/debug/app-debug.apk
+                  releaseNotes: "Debug Build (fallback creds) - Commit: ${{ github.sha }}"
+
             # 6. Upload Release APK to Firebase
             - name: Upload Release APK
               if: ${{ steps.secrets.outputs.release_ready == 'true' }}
@@ -114,9 +138,20 @@ jobs:
                   file: app/build/outputs/apk/release/app-release.apk
                   releaseNotes: "Release Build - Commit: ${{ github.sha }}"
 
+            - name: Upload Release APK (fallback)
+              if: ${{ steps.secrets.outputs.release_ready != 'true' && steps.secrets.outputs.fallback_ready == 'true' }}
+              uses: wzieba/Firebase-Distribution-Github-Action@v1
+              with:
+                  appId: 1:611955759822:android:1059bf9af9468b725bce9f
+                  serviceCredentialsFile: app/google-services.json
+                  groups: testers
+                  file: app/build/outputs/apk/release/app-release.apk
+                  releaseNotes: "Release Build (fallback creds) - Commit: ${{ github.sha }}"
+
             - name: Job summary
               run: |
                   echo "### Android CI Summary" >> "$GITHUB_STEP_SUMMARY"
                   echo "- Debug deploy ready: ${{ steps.secrets.outputs.debug_ready }}" >> "$GITHUB_STEP_SUMMARY"
                   echo "- Release deploy ready: ${{ steps.secrets.outputs.release_ready }}" >> "$GITHUB_STEP_SUMMARY"
                   echo "- Google services provided: ${{ steps.secrets.outputs.google_services_present }}" >> "$GITHUB_STEP_SUMMARY"
+                  echo "- Fallback ready: ${{ steps.secrets.outputs.fallback_ready }}" >> "$GITHUB_STEP_SUMMARY"
