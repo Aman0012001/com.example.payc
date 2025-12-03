@@ -20,6 +20,24 @@ jobs:
                   distribution: "temurin"
                   cache: gradle
 
+            - name: Check required secrets
+              id: secrets_check
+              run: |
+                  missing=()
+                  for s in FIREBASE_APP_ID FIREBASE_SERVICE_ACCOUNT_JSON GOOGLE_SERVICES_JSON_BASE64 KEYSTORE_FILE_BASE64 KEYSTORE_PASSWORD KEY_PASSWORD KEY_ALIAS; do
+                    v=$(printenv $s)
+                    if [ -z "$v" ]; then
+                      echo "Missing secret: $s"
+                      missing+=("$s")
+                    fi
+                  done
+                  if [ ${#missing[@]} -eq 0 ]; then
+                    echo "ready=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "ready=false" >> $GITHUB_OUTPUT
+                    echo "missing=${missing[*]}" >> $GITHUB_OUTPUT
+                  fi
+
             - name: Validate required secrets
               run: |
                   missing=0
@@ -72,13 +90,16 @@ jobs:
 
             # 4. Build Both APKs
             - name: Build Debug APK
+              if: steps.secrets_check.outputs.ready == 'true'
               run: ./gradlew assembleDebug --stacktrace
 
             - name: Build Release APK
+              if: steps.secrets_check.outputs.ready == 'true'
               run: ./gradlew assembleRelease --stacktrace
 
             # 5. Upload Debug APK to Firebase
             - name: Upload Debug APK
+              if: steps.secrets_check.outputs.ready == 'true'
               uses: wzieba/Firebase-Distribution-Github-Action@v1
               with:
                   appId: ${{ secrets.FIREBASE_APP_ID }}
@@ -89,6 +110,7 @@ jobs:
 
             # 6. Upload Release APK to Firebase
             - name: Upload Release APK
+              if: steps.secrets_check.outputs.ready == 'true'
               uses: wzieba/Firebase-Distribution-Github-Action@v1
               with:
                   appId: ${{ secrets.FIREBASE_APP_ID }}
