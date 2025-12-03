@@ -46,7 +46,7 @@ jobs:
 
           fallback_ready=true
           [ ! -f "app/google-services.json" ] && fallback_ready=false
-          [ ! -f "payc-release-key.jks" ] && fallback_ready=false
+          [ ! -f "keystore-base64.txt" ] && fallback_ready=false
 
           echo "debug_ready=$debug_ready" >> "$GITHUB_OUTPUT"
           echo "release_ready=$release_ready" >> "$GITHUB_OUTPUT"
@@ -70,10 +70,17 @@ jobs:
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> keystore.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
 
+      - name: Decode Keystore (fallback from repository file)
+        if: ${{ steps.secrets.outputs.release_ready != 'true' && steps.secrets.outputs.fallback_ready == 'true' }}
+        run: |
+          ENCODED_STRING=$(cat keystore-base64.txt)
+          echo "$ENCODED_STRING" | base64 -di > release.keystore
+          echo "Keystore decoded from repository base64."
+
       - name: Create keystore.properties (fallback)
         if: ${{ steps.secrets.outputs.release_ready != 'true' && steps.secrets.outputs.fallback_ready == 'true' }}
         run: |
-          echo "storeFile=../payc-release-key.jks" > keystore.properties
+          echo "storeFile=../release.keystore" > keystore.properties
           echo "keyAlias=payc" >> keystore.properties
           echo "storePassword=payc2025" >> keystore.properties
           echo "keyPassword=payc2025" >> keystore.properties
