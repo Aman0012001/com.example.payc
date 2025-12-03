@@ -48,6 +48,15 @@ jobs:
                   [ ! -f "app/google-services.json" ] && fallback_ready=false
                   [ ! -f "keystore-base64.txt" ] && fallback_ready=false
 
+                  missing=""
+                  [ -z "$FIREBASE_APP_ID" ] && missing="$missing\nFIREBASE_APP_ID"
+                  [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ] && missing="$missing\nFIREBASE_SERVICE_ACCOUNT_JSON"
+                  [ -z "$GOOGLE_SERVICES_JSON_BASE64" ] && missing="$missing\nGOOGLE_SERVICES_JSON_BASE64"
+                  [ -z "$KEYSTORE_FILE_BASE64" ] && missing="$missing\nKEYSTORE_FILE_BASE64"
+                  [ -z "$KEYSTORE_PASSWORD" ] && missing="$missing\nKEYSTORE_PASSWORD"
+                  [ -z "$KEY_PASSWORD" ] && missing="$missing\nKEY_PASSWORD"
+                  [ -z "$KEY_ALIAS" ] && missing="$missing\nKEY_ALIAS"
+
                   echo "debug_ready=$debug_ready" >> "$GITHUB_OUTPUT"
                   echo "release_ready=$release_ready" >> "$GITHUB_OUTPUT"
                   echo "google_services_present=$google_services_present" >> "$GITHUB_OUTPUT"
@@ -56,6 +65,11 @@ jobs:
                   echo "Release deploy ready: $release_ready"
                   echo "Google services provided: $google_services_present"
                   echo "Fallback ready (files in repo): $fallback_ready"
+                  echo "Missing secrets:${missing}" 
+                  if [ -n "$missing" ]; then
+                    echo "### Missing GitHub Secrets" >> "$GITHUB_STEP_SUMMARY"
+                    echo "$missing" >> "$GITHUB_STEP_SUMMARY"
+                  fi
 
             # 1. Decode the Keystore File (Required for Release Build)
             - name: Decode Keystore
